@@ -8,6 +8,7 @@ import (
 
 func PrepareMaze(img image.Image) (map[int][]int, image.Image, error) {
 	oldImg := img.(*image.Paletted)
+
 	newImg := image.NewRGBA(oldImg.Rect)
 	w, h := newImg.Rect.Dx(), newImg.Rect.Dy()
 
@@ -46,6 +47,7 @@ func PrepareMaze(img image.Image) (map[int][]int, image.Image, error) {
 		}
 	}
 	newImg.Pix = newColor
+	oldImg.Palette = append(oldImg.Palette, color.RGBA{255, 0, 0, 255})
 	return m, newImg, nil
 }
 
