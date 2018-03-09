@@ -6,14 +6,11 @@ import (
 	"image/color"
 )
 
-func PrepareMaze(img image.Image) (map[int][]int, image.Image, error) {
+func PrepareMaze(img image.Image) (map[int][]int, error) {
 	oldImg := img.(*image.Paletted)
 
-	newImg := image.NewRGBA(oldImg.Rect)
-	w, h := newImg.Rect.Dx(), newImg.Rect.Dy()
+	w, h := oldImg.Rect.Dx(), oldImg.Rect.Dy()
 
-	oldColor := oldImg.Pix
-	newColor := make([]uint8, 4*len(oldColor))
 	m := make(map[int][]int)
 	var (
 		indx, up, down, left, right int
@@ -22,12 +19,7 @@ func PrepareMaze(img image.Image) (map[int][]int, image.Image, error) {
 	for i := 0; i < w; i++ {
 		for j := 0; j < h; j++ {
 			indx = i*w + j
-			newColor[indx*4+0] = oldColor[indx] * 255
-			newColor[indx*4+1] = oldColor[indx] * 255
-			newColor[indx*4+2] = oldColor[indx] * 255
-			newColor[indx*4+3] = 255
-
-			if oldColor[indx] != 0 {
+			if oldImg.Pix[indx] != 0 {
 				connected = []int{}
 				up = (i-1)*w + j
 				left = i*w + j - 1
@@ -36,7 +28,7 @@ func PrepareMaze(img image.Image) (map[int][]int, image.Image, error) {
 				direction = []int{up, left, right, down}
 				for _, v := range direction {
 					if v >= 0 && v < h*w {
-						if oldColor[v] != 0 {
+						if oldImg.Pix[v] != 0 {
 							connected = append(connected, v)
 						}
 					}
@@ -46,9 +38,8 @@ func PrepareMaze(img image.Image) (map[int][]int, image.Image, error) {
 			}
 		}
 	}
-	newImg.Pix = newColor
-	oldImg.Palette = append(oldImg.Palette, color.RGBA{255, 0, 0, 255})
-	return m, newImg, nil
+	oldImg.Palette = append(oldImg.Palette, color.RGBA{255, 0, 0, 255}, color.RGBA{0, 255, 0, 255}, color.RGBA{0, 0, 255, 255})
+	return m, nil
 }
 
 func FindEntrance(img image.Image) (int, error) {
@@ -87,34 +78,17 @@ func FindExit(img image.Image) (int, error) {
 	return p, err
 }
 
-func SolvedColor(img image.Image, ent, ext int, sol []int) image.Image {
-	nImg := img.(*image.RGBA)
-
-	newColor := nImg.Pix
-
-	red := color.RGBA{255, 0, 0, 255}
-	green := color.RGBA{0, 255, 0, 255}
-	blue := color.RGBA{0, 0, 255, 255}
+func SolvedColor(img image.Image, ent, ext int, sol []int) {
+	nImg := img.(*image.Paletted)
 
 	for _, v := range sol {
-		newColor[v*4+0] = blue.R
-		newColor[v*4+1] = blue.G
-		newColor[v*4+2] = blue.B
-		newColor[v*4+3] = blue.A
+		nImg.Pix[v] = 4
+
 	}
 
-	newColor[ent*4+0] = green.R
-	newColor[ent*4+1] = green.G
-	newColor[ent*4+2] = green.B
-	newColor[ent*4+3] = green.A
+	nImg.Pix[ent] = 3
 
-	newColor[ext*4+0] = red.R
-	newColor[ext*4+1] = red.G
-	newColor[ext*4+2] = red.B
-	newColor[ext*4+3] = red.A
-
-	nImg.Pix = newColor
-	return nImg
+	nImg.Pix[ext] = 2
 
 }
 

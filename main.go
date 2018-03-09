@@ -28,7 +28,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	m, graph, err := maze.PrepareMaze(img)
+	m, err := maze.PrepareMaze(img)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -64,7 +64,7 @@ func main() {
 	}
 	elapsed := time.Since(start)
 
-	sImg := maze.SolvedColor(graph, ent, ext, sol)
+	maze.SolvedColor(img, ent, ext, sol)
 
 	outfile, err := os.Create("MazeImages/" + filename[:len(filename)-4] + "_" + solver + ".png")
 	if err != nil {
@@ -74,6 +74,6 @@ func main() {
 	pl := maze.PathLength(sol)
 	fmt.Println("The length of the path found is: ", pl)
 	fmt.Println("The time taken to solve is: ", elapsed)
-	png.Encode(outfile, sImg)
+	png.Encode(outfile, img)
 
 }
