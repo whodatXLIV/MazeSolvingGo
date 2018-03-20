@@ -24,6 +24,7 @@ func main() {
 	}
 	defer imfile.Close()
 	img, err := png.Decode(imfile)
+
 	if err != nil {
 		log.Fatal(err)
 	}
