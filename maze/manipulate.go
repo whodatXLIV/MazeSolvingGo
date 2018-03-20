@@ -6,37 +6,30 @@ import (
 	"image/color"
 )
 
-func PrepareMaze(img image.Image) (map[int][]int, image.Image, error) {
-	oldImg := img.(*image.Paletted)
+func PrepareMaze(img image.Image) (map[int][]int, error) {
+	maze := img.(*image.Paletted)
 
-	newImg := image.NewRGBA(oldImg.Rect)
-	w, h := newImg.Rect.Dx(), newImg.Rect.Dy()
-
-	oldColor := oldImg.Pix
-	newColor := make([]uint8, 4*len(oldColor))
+	w, h := maze.Rect.Dx(), maze.Rect.Dy()
+	c := maze.Pix
 	m := make(map[int][]int)
 	var (
 		indx, up, down, left, right int
 		connected, direction        []int
 	)
-	for i := 0; i < w; i++ {
-		for j := 0; j < h; j++ {
+	for j := 0; j < h; j++ {
+		for i := 0; i < w; i++ {
 			indx = i*w + j
-			newColor[indx*4+0] = oldColor[indx] * 255
-			newColor[indx*4+1] = oldColor[indx] * 255
-			newColor[indx*4+2] = oldColor[indx] * 255
-			newColor[indx*4+3] = 255
-
-			if oldColor[indx] != 0 {
+			if c[indx] != 0 {
 				connected = []int{}
 				up = (i-1)*w + j
 				left = i*w + j - 1
 				right = i*w + j + 1
 				down = (i+1)*w + j
 				direction = []int{up, left, right, down}
+
 				for _, v := range direction {
 					if v >= 0 && v < h*w {
-						if oldColor[v] != 0 {
+						if c[v] != 0 {
 							connected = append(connected, v)
 						}
 					}
@@ -46,20 +39,60 @@ func PrepareMaze(img image.Image) (map[int][]int, image.Image, error) {
 			}
 		}
 	}
-	newImg.Pix = newColor
-	oldImg.Palette = append(oldImg.Palette, color.RGBA{255, 0, 0, 255})
-	return m, newImg, nil
+	maze.Palette = append(maze.Palette, color.RGBA{255, 0, 0, 255}, color.RGBA{0, 255, 0, 255}, color.RGBA{0, 0, 255, 255})
+	return m, nil
 }
 
+func PrepareMazeExtra(img image.Image) (map[int][]int, error) {
+	maze := img.(*image.Paletted)
+
+	w, h := maze.Rect.Dx(), maze.Rect.Dy()
+	c := maze.Pix
+	m := make(map[int][]int)
+	mt := make(map[int]int)
+	var (
+		indx, up, down, left, right int
+		connected                   int
+	)
+	for j := 0; j < h; j++ {
+		for i := 0; i < w; i++ {
+			indx = i*w + j
+			if c[indx] != 0 {
+				connected = 0
+				up = int(c[(i-1)*w+j])
+				left = int(c[i*w+j-1])
+				right = int(c[i*w+j+1])
+				down = int(c[(i+1)*w+j])
+
+				if left == 1 {
+					if right == 1 {
+						if up == 1 || down == 1 {
+							connected = indx
+
+						}
+					} else {
+						connected = indx
+					}
+
+				}
+
+				m[indx] = connected
+
+			}
+		}
+	}
+	maze.Palette = append(maze.Palette, color.RGBA{255, 0, 0, 255}, color.RGBA{0, 255, 0, 255}, color.RGBA{0, 0, 255, 255})
+	return m, nil
+	// Think about using struct to hold begining end of maze
+}
 func FindEntrance(img image.Image) (int, error) {
 	b := img.Bounds()
 	w := b.Max.X
 	var p int
-	var rp uint8
+	c := img.(*image.Paletted).Pix
 
 	for i := 0; i < w; i++ {
-		rp = img.(*image.Paletted).Pix[i]
-		if rp > 0 {
+		if c[i] > 0 {
 			p = i
 			return p, nil
 		}
@@ -73,11 +106,11 @@ func FindExit(img image.Image) (int, error) {
 	b := img.Bounds()
 	w, h := b.Max.X, b.Max.Y
 	var p, indx int
-	var rp uint8
+	c := img.(*image.Paletted).Pix
+
 	for i := 0; i < w; i++ {
 		indx = h*(w-1) - 1 + i
-		rp = img.(*image.Paletted).Pix[indx]
-		if rp > 0 {
+		if c[indx] > 0 {
 			p = indx
 			return p, nil
 		}
@@ -87,34 +120,18 @@ func FindExit(img image.Image) (int, error) {
 	return p, err
 }
 
-func SolvedColor(img image.Image, ent, ext int, sol []int) image.Image {
-	nImg := img.(*image.RGBA)
-
-	newColor := nImg.Pix
-
-	red := color.RGBA{255, 0, 0, 255}
-	green := color.RGBA{0, 255, 0, 255}
-	blue := color.RGBA{0, 0, 255, 255}
+func SolvedColor(img image.Image, ent, ext int, sol []int) {
+	// Palette colors [Black white red green blue]
+	maze := img.(*image.Paletted)
 
 	for _, v := range sol {
-		newColor[v*4+0] = blue.R
-		newColor[v*4+1] = blue.G
-		newColor[v*4+2] = blue.B
-		newColor[v*4+3] = blue.A
+		maze.Pix[v] = 4
+
 	}
 
-	newColor[ent*4+0] = green.R
-	newColor[ent*4+1] = green.G
-	newColor[ent*4+2] = green.B
-	newColor[ent*4+3] = green.A
+	maze.Pix[ent] = 3
 
-	newColor[ext*4+0] = red.R
-	newColor[ext*4+1] = red.G
-	newColor[ext*4+2] = red.B
-	newColor[ext*4+3] = red.A
-
-	nImg.Pix = newColor
-	return nImg
+	maze.Pix[ext] = 2
 
 }
 
